@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule 
+xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" 
+xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" 
+xmlns:core="http://www.mulesoft.org/schema/mule/core" 
+xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf"
+xmlns:context="http://www.springframework.org/schema/context" 
+xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+xmlns:expression-language="http://www.mulesoft.org/schema/mule/expression-language-gw"
+xmlns:http="http://www.mulesoft.org/schema/mule/http"  
+xmlns:https="http://www.mulesoft.org/schema/mule/https"
+xmlns:jersey="http://www.mulesoft.org/schema/mule/jersey"
+xmlns:jetty="http://www.mulesoft.org/schema/mule/jetty"
+xmlns:json="http://www.mulesoft.org/schema/mule/json" 
+xmlns="http://www.mulesoft.org/schema/mule/core" 
+xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+xmlns:oauth2-provider="http://www.mulesoft.org/schema/mule/oauth2-provider"
+xmlns:proxy="http://www.mulesoft.org/schema/mule/proxy"
+xmlns:spring="http://www.springframework.org/schema/beans" 
+xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" 
+xmlns:ss="http://www.springframework.org/schema/security"
+xmlns:tcp="http://www.mulesoft.org/schema/mule/tcp" 
+xmlns:test="http://www.mulesoft.org/schema/mule/test"
+xmlns:tls="http://www.mulesoft.org/schema/mule/tls" 
+xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+xsi:schemaLocation="http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/current/mule-cxf.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+http://www.mulesoft.org/schema/mule/jersey http://www.mulesoft.org/schema/mule/jersey/current/mule-jersey.xsd
+http://www.mulesoft.org/schema/mule/jetty http://www.mulesoft.org/schema/mule/jetty/current/mule-jetty.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/expression-language-gw http://www.mulesoft.org/schema/mule/expression-language-gw/current/mule-expression-language-gw.xsd
+http://www.mulesoft.org/schema/mule/oauth2-provider http://www.mulesoft.org/schema/mule/oauth2-provider/current/mule-oauth2-provider.xsd
+http://www.mulesoft.org/schema/mule/proxy http://www.mulesoft.org/schema/mule/proxy/current/mule-proxy.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd
+http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/tcp http://www.mulesoft.org/schema/mule/tcp/current/mule-tcp.xsd
+http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/current/mule-test.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+
+	<tls:context name="tls.context.listener" doc:name="TLS Context">
+	    <tls:key-store path="ssltest-keystore.jks" password="changeit" keyPassword="changeit"/>
+	</tls:context>
+	        
+	<tls:context name="tls.context.requester" doc:name="TLS Context">
+	    <tls:trust-store path="ssltest-keystore.jks" password="changeit"/>
+	</tls:context>
+	    
+	<http:listener-config name="https.listener" protocol="HTTPS" host="0.0.0.0" port="8992" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
+	</http:listener-config>
+	
+	<http:listener-config name="http.listener" host="0.0.0.0" port="8991" doc:name="HTTP Listener Configuration"/>
+	    
+	<http:request-config
+	      name="environment-qax"
+	      host="qax.anypoint.mulesoft.com"
+	      port="443"
+	      protocol="HTTPS"
+	      
+	      doc:name="HTTP Request Configuration">
+        <tls:context>
+            <tls:trust-store insecure="true"/>
+        </tls:context>
+    </http:request-config>
+	      
+	 <http:request-config
+	      name="environment-stgx"
+	      host="stgx.anypoint.mulesoft.com"
+	      port="443"
+	      protocol="HTTPS"
+	      tlsContext-ref="tls.context.requester"
+	      doc:name="HTTP Request Configuration"/>
+	      
+	<http:request-config
+	      name="environment-prod"
+	      host="anypoint.mulesoft.com"
+	      port="443"
+	      protocol="HTTPS"
+	      tlsContext-ref="tls.context.requester"
+	      doc:name="HTTP Request Configuration"/>
+      
+    <flow name="proxy-qax">
+        <http:listener config-ref="https.listener" path="/qax/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
+        <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
+        <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
+        <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
+        <http:request config-ref="environment-qax" method="#[message.inboundProperties['http.method']]"
+                 path="#[message.inboundProperties['http.request.path'].substring(flowVars['resolvedHttpListenerPath'].length()-2)]" parseResponse="false" doc:name="HTTP">
+	        <http:request-builder>
+                <http:query-params expression="#[message.inboundProperties['http.query.params']]"/>
+	        </http:request-builder>
+	        <http:success-status-code-validator values="0..599" />
+        </http:request>
+        <flow-ref name="process-response-headers" doc:name="process-response-headers"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+        	<logger level="ERROR" message="Unable to re-send platform call because of exception: #[exception]"  doc:name="Logger"/>
+        </catch-exception-strategy>
+    </flow>
+    
+    <flow name="proxy-stgx">
+        <http:listener config-ref="https.listener" path="/stgx/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
+        <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
+        <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
+        <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
+        <http:request config-ref="environment-stgx" method="#[message.inboundProperties['http.method']]"
+                 path="#[message.inboundProperties['http.request.path'].substring(flowVars['resolvedHttpListenerPath'].length()-2)]" parseResponse="false" doc:name="HTTP">
+	        <http:request-builder>
+	                  <http:query-params expression="#[message.inboundProperties['http.query.params']]"/>
+	        </http:request-builder>
+	        <http:success-status-code-validator values="0..599" />
+        </http:request>
+        <flow-ref name="process-response-headers" doc:name="process-response-headers"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+        	<logger level="ERROR" message="Unable to re-send platform call because of exception: #[exception]"  doc:name="Logger"/>
+        </catch-exception-strategy>
+    </flow>
+    
+    <flow name="proxy-prod">
+        <http:listener config-ref="https.listener" path="/prod/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
+        <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
+        <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
+        <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
+        <http:request config-ref="environment-prod" method="#[message.inboundProperties['http.method']]"
+                 path="#[message.inboundProperties['http.request.path'].substring(flowVars['resolvedHttpListenerPath'].length()-2)]" parseResponse="false" doc:name="HTTP">
+	        <http:request-builder>
+	                  <http:query-params expression="#[message.inboundProperties['http.query.params']]"/>
+	        </http:request-builder>
+	        <http:success-status-code-validator values="0..599" />
+        </http:request>
+        <flow-ref name="process-response-headers" doc:name="process-response-headers"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+        	<logger level="ERROR" message="Unable to re-send platform call because of exception: #[exception]"  doc:name="Logger"/>
+        </catch-exception-strategy>
+    </flow>
+
+	<sub-flow name="process-request-headers">
+        <custom-processor class="com.mulesoft.gateway.extension.ProxyRequestHeadersProcessor" doc:name="Custom Processor"/>
+    </sub-flow>
+    
+	<sub-flow name="process-response-headers">
+	   <custom-processor class="com.mulesoft.gateway.extension.ProxyResponseHeadersProcessor" doc:name="Custom Processor"/>
+	</sub-flow>
+	
+	<flow name="configuration">
+        <http:listener config-ref="http.listener" path="/*" doc:name="HTTP"/>
+        <jersey:resources doc:name="REST" >
+	        <component class="com.mulesoft.platform.interceptor.Interceptor"/>
+	 	</jersey:resources>
+    </flow>     
+</mule>
