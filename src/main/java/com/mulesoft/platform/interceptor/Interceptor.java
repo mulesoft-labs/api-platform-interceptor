@@ -20,10 +20,15 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.log4j.Logger;
 
 @Path("/")
 public class Interceptor implements Filter {
 
+	private static final Logger LOG = Logger.getLogger("Message");
+	
+	private static final String NEW_LINE = System.getProperty("line.separator");
+	
 	private static final String HTTP_STATUS_KEY = "http.status";
 	private static final String HTTP_URI_PARAMETER_KEY = "http.uri.params";
 	private static final String RUNTIME_ID_KEY = "runtimeId";
@@ -41,18 +46,19 @@ public class Interceptor implements Filter {
 		StatsManager statsManager = runtimes.get(runtimeId);
 		
 		if (statsManager == null) {
+			LOG.info(String.format("%s %s call %sallowed for runtime with ID %s (no criteria defined)", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
 			return true;
 		}
 		
 		final ResponseDetail responseDetail = statsManager.getResponseDetail(httpRequestPath, httpMethod);
 		if (responseDetail.isPassThru()) {
-			System.out.println("Go ahead!!!!");
+			LOG.info(String.format("%s %s call %sis allowed for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
 			return true;
 		}
 		
 		message.setOutboundProperty(HTTP_STATUS_KEY, responseDetail.getStatusCode());
 		message.setPayload(responseDetail.getMessage());
-		System.out.println("YOU SHALL NOT PASS!!!!");
+		LOG.info(String.format("%s %s call %sis blocked for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
 		return false;
 	}
 
