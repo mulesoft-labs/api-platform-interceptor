@@ -46,13 +46,14 @@ http://www.mulesoft.org/schema/mule/tcp http://www.mulesoft.org/schema/mule/tcp/
 http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/current/mule-test.xsd
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
-
+	
 	<tls:context name="tls.context.listener" doc:name="TLS Context">
+        <tls:trust-store insecure="true"/>
 	    <tls:key-store path="ssltest-keystore.jks" password="changeit" keyPassword="changeit"/>
 	</tls:context>
 	        
 	<tls:context name="tls.context.requester" doc:name="TLS Context">
-	    <tls:trust-store path="ssltest-keystore.jks" password="changeit"/>
+	    <tls:trust-store path="ssltest-keystore.jks" password="changeit" insecure="true"/>
 	</tls:context>
 	    
 	<http:listener-config name="https.listener" protocol="HTTPS" host="0.0.0.0" port="8992" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
