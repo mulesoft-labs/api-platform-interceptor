@@ -7,42 +7,42 @@ import com.google.gson.JsonObject;
 
 public class StatsManager {
 	
-	private enum Strategy {NONE, FAILS_VS_OKS, PORCENTAGE} ;
-	private enum HttpVerb {POST,GET, NONE};
+	private enum Strategy {NONE, FAILS_VS_OKS, PORCENTAGE_OF_FAILING} ;
+	private enum HttpMethod {POST,GET, NONE};
 	private int statusCode;
 	private String payload;
 	private Strategy strategy;
 	private List<String> pathIntercepted;
-	private HttpVerb httpVerb;
+	private HttpMethod httpMethod;
 	private int qtyToFail;
-	private int failureAllowed;
+	private int msgBeforeFailing;
 	private int porcentage;
 	
 	public StatsManager(JsonObject jsonObject) {	
 		this.statusCode = jsonObject.get("statusCode").getAsInt();
 		this.payload = jsonObject.get("payload")==null?null:jsonObject.get("payload").getAsString();
-		this.strategy = jsonObject.get("strategy")==null?Strategy.NONE:Strategy.valueOf(jsonObject.get("strategy").getAsString());
+		this.strategy = jsonObject.get("failingStrategy")==null?Strategy.NONE:Strategy.valueOf(jsonObject.get("failingStrategy").getAsString());
 		String pathI=jsonObject.get("pathIntercepted")==null?null:jsonObject.get("pathIntercepted").getAsString();
 		this.pathIntercepted = Arrays.asList(pathI.split(","));
-		this.httpVerb = jsonObject.get("httpVerb")==null?HttpVerb.NONE:HttpVerb.valueOf(jsonObject.get("httpVerb").getAsString());
-		this.failureAllowed = jsonObject.get("failureAllowed")!=null?jsonObject.get("failureAllowed").getAsInt():0;
-		this.porcentage = jsonObject.get("porcentage")!=null?jsonObject.get("porcentage").getAsInt():0;
-		this.qtyToFail= failureAllowed;
+		this.httpMethod = jsonObject.get("httpMethod")==null?HttpMethod.NONE:HttpMethod.valueOf(jsonObject.get("httpMethod").getAsString());
+		this.msgBeforeFailing = jsonObject.get("msgBeforeFailing")!=null?jsonObject.get("msgBeforeFailing").getAsInt():0;
+		this.porcentage = jsonObject.get("porcentageOfFailing")!=null?jsonObject.get("porcentageOfFailing").getAsInt():0;
+		this.qtyToFail= msgBeforeFailing;
 	}
 
-	public ResponseDetail getResponseDetail(String path, String httpVerb) {
+	public ResponseDetail getResponseDetail(String path, String httpMethod) {
 		if (statusCode == -1) {
 			return new AvoidResponseDetail();
 		}
 		if(strategy == Strategy.NONE)
-			return new ProcessResponseDetail(statusCode, payload, validatePath(path) && this.validateHttpVerb());
+			return new ProcessResponseDetail(statusCode, payload, validatePath(path) && this.validatehttpMethod());
 		return new ProcessResponseDetail(statusCode, payload, resolveStrategy());
 	}
 	
-	private boolean validateHttpVerb(){
-		if(this.httpVerb.equals(HttpVerb.NONE))
+	private boolean validatehttpMethod(){
+		if(this.httpMethod.equals(HttpMethod.NONE))
 			return true;
-		return httpVerb.equals(this.httpVerb);
+		return httpMethod.equals(this.httpMethod);
 	}
 	
 	public boolean validatePath(String path){
@@ -57,7 +57,7 @@ public class StatsManager {
 	private boolean resolveStrategy(){
 		if(this.strategy.equals(Strategy.FAILS_VS_OKS))
 			return failVsOks();
-		else if (this.strategy.equals(Strategy.PORCENTAGE))
+		else if (this.strategy.equals(Strategy.PORCENTAGE_OF_FAILING))
 			return porcentageFailing();
 		throw new RuntimeException();
 	}
@@ -65,7 +65,7 @@ public class StatsManager {
 	private boolean failVsOks(){
 		if((this.qtyToFail--)>0)
 			return true;
-		this.qtyToFail= this.failureAllowed;
+		this.qtyToFail= this.msgBeforeFailing;
 		return false;
 	}
 	
