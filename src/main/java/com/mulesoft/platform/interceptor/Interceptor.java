@@ -1,5 +1,6 @@
 package com.mulesoft.platform.interceptor;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,8 @@ import javax.ws.rs.core.Response;
 import org.mule.api.MuleMessage;
 import org.mule.api.routing.filter.Filter;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -35,18 +38,21 @@ public class Interceptor implements Filter {
 		final String httpMethod = ((String)(message.getInboundProperty("http.method")));
 		final String httpRequestPath = ((String)(message.getInboundProperty("http.request.uri"))).substring(listenerPath.length());
 		
-		final StatsManager statsManager = runtimes.get(runtimeId);
+		StatsManager statsManager = runtimes.get(runtimeId);
+		
 		if (statsManager == null) {
 			return true;
 		}
 		
 		final ResponseDetail responseDetail = statsManager.getResponseDetail(httpRequestPath, httpMethod);
 		if (responseDetail.isPassThru()) {
+			System.out.println("Go ahead!!!!");
 			return true;
 		}
-
+		
 		message.setOutboundProperty(HTTP_STATUS_KEY, responseDetail.getStatusCode());
 		message.setPayload(responseDetail.getMessage());
+		System.out.println("YOU SHALL NOT PASS!!!!");
 		return false;
 	}
 
@@ -60,7 +66,7 @@ public class Interceptor implements Filter {
     @POST
     @Consumes("application/json")
     @Produces(MediaType.TEXT_PLAIN)
-    public Response setStatus(String originalPayload) {
+    public Response setStatus(String originalPayload) throws JsonParseException, JsonMappingException, IOException {
 		final JsonObject jsonObject = new JsonParser().parse(originalPayload).getAsJsonObject();
 		final String runtimeId = jsonObject.get(RUNTIME_ID_KEY).getAsString();
 		runtimes.put(runtimeId, new StatsManager(jsonObject));
