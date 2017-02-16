@@ -21,10 +21,10 @@ public class StatsManager {
 	public StatsManager(JsonObject jsonObject) {	
 		this.statusCode = jsonObject.get("statusCode").getAsInt();
 		this.payload = jsonObject.get("payload")==null?null:jsonObject.get("payload").getAsString();
-		this.strategy = jsonObject.get("failingStrategy")==null?Strategy.NONE:Strategy.valueOf(jsonObject.get("failingStrategy").getAsString());
+		this.strategy = jsonObject.get("failingStrategy")==null?Strategy.NONE:Strategy.valueOf(jsonObject.get("failingStrategy").getAsString().toUpperCase());
 		String pathI=jsonObject.get("pathIntercepted")==null?null:jsonObject.get("pathIntercepted").getAsString();
 		this.pathIntercepted = Arrays.asList(pathI.split(","));
-		this.httpMethod = jsonObject.get("httpMethod")==null?HttpMethod.NONE:HttpMethod.valueOf(jsonObject.get("httpMethod").getAsString());
+		this.httpMethod = jsonObject.get("httpMethod")==null?HttpMethod.NONE:HttpMethod.valueOf(jsonObject.get("httpMethod").getAsString().toUpperCase());
 		this.msgBeforeFailing = jsonObject.get("msgBeforeFailing")!=null?jsonObject.get("msgBeforeFailing").getAsInt():0;
 		this.porcentage = jsonObject.get("porcentageOfFailing")!=null?jsonObject.get("porcentageOfFailing").getAsInt():0;
 		this.qtyToFail= msgBeforeFailing;
