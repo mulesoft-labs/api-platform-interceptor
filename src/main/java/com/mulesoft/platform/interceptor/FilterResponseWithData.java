@@ -9,19 +9,19 @@ package com.mulesoft.platform.interceptor;
 
 public class FilterResponseWithData extends FilterResponse {
 
-	private boolean response = false;
+	private boolean isPassThru = false;
 
 	public FilterResponseWithData(int statusCode, String message) {
 		super(statusCode, message);
 	}
 
-	public FilterResponseWithData(int statusCode, String message, boolean response) {
+	public FilterResponseWithData(int statusCode, String message, boolean isPassThru) {
 		super(statusCode, message);
-		this.response = response;
+		this.isPassThru = isPassThru;
 	}
 
 	@Override
 	public boolean isPassThru() {
-		return response;
+		return isPassThru;
 	}
 }

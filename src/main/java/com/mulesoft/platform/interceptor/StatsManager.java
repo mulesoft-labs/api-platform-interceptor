@@ -7,6 +7,8 @@
 
 package com.mulesoft.platform.interceptor;
 
+import static com.mulesoft.platform.interceptor.Interceptor.NEW_LINE;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,9 +28,10 @@ public class StatsManager {
 	private Strategy strategy;
 	private List<String> pathIntercepted;
 	private HttpMethod httpMethod;
-	private int qtyToFail;
 	private int msgBeforeFailing;
 	private int porcentage;
+	
+	private int qtyToFail;
 	
 	private static final String STATUS_CODE_KEY = "statusCode";
 	private static final String PAYLOAD_KEY = "payload";
@@ -38,6 +41,8 @@ public class StatsManager {
 	private static final String MSG_BEFORE_FAILING_KEY = "msgBeforeFailing";
 	private static final String PERCENTAGE_OF_FAILING_KEY = "porcentageOfFailing";
 
+	// TODO: Accept several different criteria instead of only one.
+	
 	public StatsManager(JsonObject jsonObject) {
 		statusCode = jsonObject.get(STATUS_CODE_KEY).getAsInt();
 		payload = jsonObject.get(PAYLOAD_KEY) == null ? null : jsonObject.get(PAYLOAD_KEY).getAsString();
@@ -45,8 +50,8 @@ public class StatsManager {
 		String pathToIntercept = jsonObject.get(PATH_TO_INTERCEPT_KEY) == null ? null : jsonObject.get(PATH_TO_INTERCEPT_KEY).getAsString();
 		pathIntercepted = Arrays.asList(pathToIntercept.split(","));
 		httpMethod = jsonObject.get(HTTP_METHOD_TO_FILTER_KEY) == null ? HttpMethod.NONE : HttpMethod.valueOf(jsonObject.get(HTTP_METHOD_TO_FILTER_KEY).getAsString().toUpperCase());
-		msgBeforeFailing = jsonObject.get(MSG_BEFORE_FAILING_KEY) != null ? jsonObject.get(MSG_BEFORE_FAILING_KEY).getAsInt() : 0;
-		porcentage = jsonObject.get(PERCENTAGE_OF_FAILING_KEY) != null	? jsonObject.get(PERCENTAGE_OF_FAILING_KEY).getAsInt() : 0;
+		msgBeforeFailing = jsonObject.get(MSG_BEFORE_FAILING_KEY) != null ? jsonObject.get(MSG_BEFORE_FAILING_KEY).getAsInt() : -1;
+		porcentage = jsonObject.get(PERCENTAGE_OF_FAILING_KEY) != null	? jsonObject.get(PERCENTAGE_OF_FAILING_KEY).getAsInt() : -1;
 		qtyToFail = msgBeforeFailing;
 	}
 
@@ -55,12 +60,12 @@ public class StatsManager {
 			return new FilterResponsePassThru();
 		}
 		if (strategy == Strategy.NONE) {
-			return new FilterResponseWithData(statusCode, payload, validatePath(path) && this.validatehttpMethod());
+			return new FilterResponseWithData(statusCode, payload, isPathPassThru(path) && isHttpMethodPassThru());
 		}
 		return new FilterResponseWithData(statusCode, payload, resolveStrategy());
 	}
 
-	private boolean validatehttpMethod() {
+	private boolean isHttpMethodPassThru() {
 		switch(httpMethod) {
 			case NONE:
 				return true;
@@ -69,7 +74,7 @@ public class StatsManager {
 		}		
 	}
 
-	public boolean validatePath(String path) {
+	public boolean isPathPassThru(String path) {
 		if (pathIntercepted == null) {
 			return true;
 		}
@@ -93,17 +98,49 @@ public class StatsManager {
 	}
 
 	private boolean failVsOks() {
-		if ((this.qtyToFail--) > 0) {
+		if ((qtyToFail--) > 0) {
 			return true;
 		}
-		this.qtyToFail = this.msgBeforeFailing;
+		qtyToFail = msgBeforeFailing;
 		return false;
 	}
 
 	private boolean porcentageFailing() {
-		if (Math.random() * 100 > porcentage) {
-			return true;
+		return Math.random() * 100 > porcentage;
+	}
+	
+	@Override
+	public String toString() {
+		final StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder
+			.append(NEW_LINE)
+			.append("Criteria")
+			.append(NEW_LINE)
+			.append("Status code to be returned: ")
+			.append(statusCode)
+			.append(NEW_LINE)
+			.append("Payload to be returned: ")
+			.append(payload)
+			.append(NEW_LINE)
+			.append("Fail strategy used: ")
+			.append(strategy)
+		    .append(NEW_LINE);
+		if (!pathIntercepted.isEmpty()) {
+			stringBuilder.append("Path(s): ");
+			for (String path : pathIntercepted) {
+				stringBuilder.append(path).append(" ");
+			}
 		}
-		return false;
+		stringBuilder
+			.append(NEW_LINE)
+			.append("HTTP method: ")
+			.append(httpMethod.name())
+			.append(NEW_LINE)
+			.append("Messages before failing: ")
+			.append(msgBeforeFailing)
+			.append(NEW_LINE)
+			.append("Percentage: ")
+			.append(porcentage);
+		return stringBuilder.toString();
 	}
 }

@@ -30,17 +30,26 @@ import com.google.common.cache.CacheBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+// TODO: Add reset by runtime.
+// TODO: Parameterize environment and listener ports.
+
 @Path("/")
 public class Interceptor implements Filter {
 
 	private static final Logger LOG = Logger.getLogger("Message");
 
-	private static final String NEW_LINE = System.getProperty("line.separator");
+	static final String NEW_LINE = System.getProperty("line.separator");
 
 	private static final String HTTP_STATUS_KEY = "http.status";
 	private static final String HTTP_URI_PARAMETER_KEY = "http.uri.params";
 	private static final String RUNTIME_ID_KEY = "runtimeId";
 	private static final String ENVIRONMENT_KEY = "environment";
+	
+	private static final String MULE_HTTP_METHOD_PROP = "http.method";
+	private static final String MULE_LISTENER_PATH_PROP = "http.listener.path";
+	private static final String MULE_REQUEST_URI_PROP = "http.request.uri";
+	
+	private static final String URI_TEMPLATE_RUNTIME_ID = "\\{runtimeId\\}";
 
 	private static Cache<String, StatsManager> runtimes;
 
@@ -52,26 +61,31 @@ public class Interceptor implements Filter {
 	public boolean accept(MuleMessage message) {
 		@SuppressWarnings("unchecked")
 		final String runtimeId = ((Map<String, String>) message.getInboundProperty(HTTP_URI_PARAMETER_KEY)).get(RUNTIME_ID_KEY);
-		final String listenerPath = ((String) (message.getInboundProperty("http.listener.path"))).replaceAll("\\{runtimeId\\}", runtimeId).replace("/*", "");
-		final String httpMethod = ((String) (message.getInboundProperty("http.method")));
-		final String httpRequestPath = ((String) (message.getInboundProperty("http.request.uri"))).substring(listenerPath.length());
+		final String listenerPath = ((String) (message.getInboundProperty(MULE_LISTENER_PATH_PROP))).replaceAll(URI_TEMPLATE_RUNTIME_ID, runtimeId).replace("/*", "");
+		final String httpMethod = ((String) (message.getInboundProperty(MULE_HTTP_METHOD_PROP)));
+		final String httpRequestPath = ((String) (message.getInboundProperty(MULE_REQUEST_URI_PROP))).substring(listenerPath.length());
 
 		final StatsManager statsManager = runtimes.asMap().get(listenerPath);
-
 		if (statsManager == null) {
-			LOG.debug(String.format("%s %s call %sallowed for runtime with ID %s (no criteria defined)", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
+			if (LOG.isDebugEnabled()) {
+				LOG.debug(String.format("%s %s call %sALLOWED for runtime with ID %s (no criteria defined)", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
+			}
 			return true;
 		}
 
 		final FilterResponse filterResponse = statsManager.getFilterResponse(httpRequestPath, httpMethod);
 		if (filterResponse.isPassThru()) {
-			LOG.debug(String.format("%s %s call %sis allowed for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
+			if (LOG.isDebugEnabled()) {
+				LOG.debug(String.format("%s %s call %ALLOWED for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
+			}
 			return true;
 		}
 
 		message.setOutboundProperty(HTTP_STATUS_KEY, filterResponse.getStatusCode());
 		message.setPayload(filterResponse.getMessage());
-		LOG.debug(String.format("%s %s call %sis blocked for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
+		if (LOG.isDebugEnabled()) {
+			LOG.debug(String.format("%s %s call %sis BLOCKED for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
+		}
 		return false;
 	}
 
@@ -87,10 +101,14 @@ public class Interceptor implements Filter {
 	@Produces(MediaType.TEXT_PLAIN)
 	public Response setStatus(String originalPayload) throws JsonParseException, JsonMappingException, IOException {
 		final JsonObject jsonObject = new JsonParser().parse(originalPayload).getAsJsonObject();
-		final String runtimeId = jsonObject.get(RUNTIME_ID_KEY).getAsString();
-		final String environment = jsonObject.get(ENVIRONMENT_KEY).getAsString();
-		runtimes.asMap().put(environment + "/" + runtimeId, new StatsManager(jsonObject));
+		final String runtimeId = jsonObject.get(RUNTIME_ID_KEY) != null ? jsonObject.get(RUNTIME_ID_KEY).getAsString() : null;
+		final String environment = jsonObject.get(ENVIRONMENT_KEY) != null ? jsonObject.get(ENVIRONMENT_KEY).getAsString() : null;
+		if ((runtimeId == null) || (environment == null)) {
+			throw new RuntimeException("Unable to identify runtime, either or bot runtimeID and environment not provided");
+		}
+		final StatsManager statsManager = new StatsManager(jsonObject);
+		runtimes.asMap().put(String.format("/%s/%s", environment, runtimeId), statsManager);
 		
-		return Response.status(Response.Status.ACCEPTED).type(MediaType.TEXT_PLAIN).entity(String.format("Response strategy for %s updated", runtimeId)).build();
+		return Response.status(Response.Status.ACCEPTED).type(MediaType.TEXT_PLAIN).entity(String.format("Response strategy for environment %s with runtime ID %s updated with %s", environment, runtimeId, statsManager)).build();
 	}
 }
