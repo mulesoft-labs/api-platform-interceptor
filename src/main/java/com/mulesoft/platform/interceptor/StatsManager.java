@@ -47,7 +47,7 @@ public class StatsManager {
 		statusCode = jsonObject.get(STATUS_CODE_KEY).getAsInt();
 		payload = jsonObject.get(PAYLOAD_KEY) == null ? null : jsonObject.get(PAYLOAD_KEY).getAsString();
 		strategy = jsonObject.get(FAIL_STRATEGY_KEY) == null ? Strategy.NONE : Strategy.valueOf(jsonObject.get(FAIL_STRATEGY_KEY).getAsString().toUpperCase());
-		String pathToIntercept = jsonObject.get(PATH_TO_INTERCEPT_KEY) == null ? null : jsonObject.get(PATH_TO_INTERCEPT_KEY).getAsString();
+		final String pathToIntercept = jsonObject.get(PATH_TO_INTERCEPT_KEY) == null ? null : jsonObject.get(PATH_TO_INTERCEPT_KEY).getAsString();
 		pathIntercepted = Arrays.asList(pathToIntercept.split(","));
 		httpMethod = jsonObject.get(HTTP_METHOD_TO_FILTER_KEY) == null ? HttpMethod.NONE : HttpMethod.valueOf(jsonObject.get(HTTP_METHOD_TO_FILTER_KEY).getAsString().toUpperCase());
 		msgBeforeFailing = jsonObject.get(MSG_BEFORE_FAILING_KEY) != null ? jsonObject.get(MSG_BEFORE_FAILING_KEY).getAsInt() : -1;

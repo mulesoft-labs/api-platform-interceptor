@@ -56,10 +56,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 	    <tls:trust-store path="ssltest-keystore.jks" password="changeit" insecure="true"/>
 	</tls:context>
 	    
-	<http:listener-config name="https.listener" protocol="HTTPS" host="0.0.0.0" port="8992" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
+	<http:listener-config name="listener.https" protocol="HTTPS" host="0.0.0.0" port="8082" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
 	</http:listener-config>
 	
-	<http:listener-config name="http.listener" host="0.0.0.0" port="8991" doc:name="HTTP Listener Configuration"/>
+	<http:listener-config name="listener.http" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
 	    
 	<http:request-config
 	      name="environment-qax"
@@ -90,10 +90,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 	      doc:name="HTTP Request Configuration"/>
       
     <flow name="proxy-qax">
-        <http:listener config-ref="https.listener" path="/qax/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
+        <http:listener config-ref="listener.https" path="/qax/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
         <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
         <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
-        <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
+        <set-variable value="#[message.inboundProperties['listener.http.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
         <http:request config-ref="environment-qax" method="#[message.inboundProperties['http.method']]"
                  path="#[message.inboundProperties['http.request.path'].substring(flowVars['resolvedHttpListenerPath'].length()-2)]" parseResponse="false" doc:name="HTTP">
 	        <http:request-builder>
@@ -108,10 +108,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     </flow>
     
     <flow name="proxy-stgx">
-        <http:listener config-ref="https.listener" path="/stgx/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
+        <http:listener config-ref="listener.https" path="/stgx/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
         <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
         <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
-        <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
+        <set-variable value="#[message.inboundProperties['listener.http.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
         <http:request config-ref="environment-stgx" method="#[message.inboundProperties['http.method']]"
                  path="#[message.inboundProperties['http.request.path'].substring(flowVars['resolvedHttpListenerPath'].length()-2)]" parseResponse="false" doc:name="HTTP">
 	        <http:request-builder>
@@ -126,10 +126,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     </flow>
     
     <flow name="proxy-prod">
-        <http:listener config-ref="https.listener" path="/prod/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
+        <http:listener config-ref="listener.https" path="/prod/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
         <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
         <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
-        <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
+        <set-variable value="#[message.inboundProperties['listener.http.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
         <http:request config-ref="environment-prod" method="#[message.inboundProperties['http.method']]"
                  path="#[message.inboundProperties['http.request.path'].substring(flowVars['resolvedHttpListenerPath'].length()-2)]" parseResponse="false" doc:name="HTTP">
 	        <http:request-builder>
@@ -152,7 +152,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 	</sub-flow>
 	
 	<flow name="configuration">
-        <http:listener config-ref="http.listener" path="/*" doc:name="HTTP"/>
+        <http:listener config-ref="listener.https" path="/*" doc:name="HTTP"/>
         <jersey:resources doc:name="REST" >
 	        <component class="com.mulesoft.platform.interceptor.Interceptor"/>
 	 	</jersey:resources>
