@@ -47,3 +47,5 @@ flows/
 target/
 **/*.mflow
 /api-platform-interceptor.iml
+/.idea/
+/.DS_Store
