@@ -16,6 +16,7 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -28,7 +29,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 // TODO: Add reset by runtime.
@@ -36,7 +36,6 @@ import com.google.gson.JsonParser;
 
 @Path("/")
 public class Interceptor implements Filter {
-
 	private static final Logger LOG = Logger.getLogger("Message");
 
 	static final String NEW_LINE = System.getProperty("line.separator");
@@ -44,7 +43,6 @@ public class Interceptor implements Filter {
 	private static final String HTTP_STATUS_KEY = "http.status";
 	private static final String HTTP_URI_PARAMETER_KEY = "http.uri.params";
 	private static final String RUNTIME_ID_KEY = "runtimeId";
-	private static final String ENVIRONMENT_KEY = "environment";
 	
 	private static final String MULE_HTTP_METHOD_PROP = "http.method";
 	private static final String MULE_LISTENER_PATH_PROP = "http.listener.path";
@@ -92,55 +90,50 @@ public class Interceptor implements Filter {
 
 	@GET
 	@Produces(MediaType.TEXT_PLAIN)
-	public String getHealth() {
+	public String getInterceptorHealth() {
 		return "Test endpoint successfully called!";
 	}
 
-	@Path("http/status")
+	@Path("statsmanager/{environment}/{runtimeId}")
 	@POST
 	@Consumes("application/json")
 	@Produces(MediaType.TEXT_PLAIN)
-	public Response setStatus(String originalPayload) throws JsonParseException, JsonMappingException, IOException {
-		final JsonObject jsonObject = new JsonParser().parse(originalPayload).getAsJsonObject();
-		final String runtimeId = jsonObject.get(RUNTIME_ID_KEY) != null ? jsonObject.get(RUNTIME_ID_KEY).getAsString() : null;
-		final String environment = jsonObject.get(ENVIRONMENT_KEY) != null ? jsonObject.get(ENVIRONMENT_KEY).getAsString() : null;
+	public Response setStatsManager(String originalPayload, @PathParam("environment") String environment, @PathParam("runtimeId") String runtimeId) throws JsonParseException, JsonMappingException, IOException {
 		if ((runtimeId == null) || (environment == null)) {
 			throw new RuntimeException("Unable to identify runtime, either or bot runtimeID and environment not provided");
 		}
-		final StatsManager statsManager = new StatsManager(jsonObject);
-		runtimes.asMap().put(String.format("/%s/%s", environment, runtimeId), statsManager);
+		final StatsManager statsManager = new StatsManager(new JsonParser().parse(originalPayload).getAsJsonObject());
+		runtimes.asMap().put(getStatsManagerKey(environment, runtimeId), statsManager);
 		
 		return Response.status(Response.Status.ACCEPTED).type(MediaType.TEXT_PLAIN).entity(String.format("Response strategy for environment %s with runtime ID %s updated with %s", environment, runtimeId, statsManager)).build();
 	}
 	
-	@Path("http/status")
+	@Path("statsmanager/{environment}/{runtimeId}")
 	@DELETE
 	@Consumes("application/json")
 	@Produces(MediaType.TEXT_PLAIN)
-	public Response resetStatus(String originalPayload) throws JsonParseException, JsonMappingException, IOException {
-		final JsonObject jsonObject = new JsonParser().parse(originalPayload).getAsJsonObject();
-		final String runtimeId = jsonObject.get(RUNTIME_ID_KEY) != null ? jsonObject.get(RUNTIME_ID_KEY).getAsString() : null;
-		final String environment = jsonObject.get(ENVIRONMENT_KEY) != null ? jsonObject.get(ENVIRONMENT_KEY).getAsString() : null;
+	public Response resetStatsManager(@PathParam("environment") String environment, @PathParam("runtimeId") String runtimeId) throws JsonParseException, JsonMappingException, IOException {
 		if ((runtimeId == null) || (environment == null)) {
 			throw new RuntimeException("Unable to identify runtime, either or bot runtimeID and environment not provided");
 		}
 		final StatsManager statsManager = runtimes.asMap().get(String.format("/%s/%s", environment, runtimeId));
-		runtimes.asMap().remove(String.format("/%s/%s", environment, runtimeId));
+		runtimes.asMap().remove(getStatsManagerKey(environment, runtimeId));
 		return Response.status(Response.Status.NO_CONTENT).type(MediaType.TEXT_PLAIN).entity(String.format("Response strategy for environment %s with runtime ID %s removed. Stats removed: %s", environment, runtimeId, statsManager)).build();
 	}
 	
-	@Path("http/status")
+	@Path("statsmanager/{environment}/{runtimeId}")
 	@GET
 	@Consumes("application/json")
 	@Produces(MediaType.TEXT_PLAIN)
-	public Response getStatus(String originalPayload) throws JsonParseException, JsonMappingException, IOException {
-		final JsonObject jsonObject = new JsonParser().parse(originalPayload).getAsJsonObject();
-		final String runtimeId = jsonObject.get(RUNTIME_ID_KEY) != null ? jsonObject.get(RUNTIME_ID_KEY).getAsString() : null;
-		final String environment = jsonObject.get(ENVIRONMENT_KEY) != null ? jsonObject.get(ENVIRONMENT_KEY).getAsString() : null;
+	public Response getStatsManagerInfo(@PathParam("environment") String environment, @PathParam("runtimeId") String runtimeId) throws JsonParseException, JsonMappingException, IOException {
 		if ((runtimeId == null) || (environment == null)) {
 			throw new RuntimeException("Unable to identify runtime, either or bot runtimeID and environment not provided");
 		}
 		final StatsManager statsManager = runtimes.asMap().get(String.format("/%s/%s", environment, runtimeId));
 		return Response.status(Response.Status.OK).type(MediaType.TEXT_PLAIN).entity(String.format("Response strategy for environment %s with runtime ID %s: %s", environment, runtimeId, statsManager)).build();
+	}
+	
+	private String getStatsManagerKey(String environment, String runtimeId) {
+		return String.format("/%s/%s", environment, runtimeId);
 	}
 }
