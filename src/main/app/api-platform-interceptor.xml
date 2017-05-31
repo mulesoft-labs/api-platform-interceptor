@@ -56,10 +56,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 	    <tls:trust-store path="ssltest-keystore.jks" password="changeit" insecure="true"/>
 	</tls:context>
 	    
-	<http:listener-config name="listener.https" protocol="HTTPS" host="0.0.0.0" port="8092" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
+	<http:listener-config name="listener.https" protocol="HTTPS" host="0.0.0.0" port="8082" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
 	</http:listener-config>
 	
-	<http:listener-config name="listener.http" host="0.0.0.0" port="8091" doc:name="HTTP Listener Configuration"/>
+	<http:listener-config name="listener.http" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
 	    
 	<http:request-config
 	      name="environment-qax"
