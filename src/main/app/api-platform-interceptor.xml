@@ -56,10 +56,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 	    <tls:trust-store path="ssltest-keystore.jks" password="changeit" insecure="true"/>
 	</tls:context>
 	    
-	<http:listener-config name="listener.https" protocol="HTTPS" host="0.0.0.0" port="8082" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
+	<http:listener-config name="listener.https" protocol="HTTPS" host="0.0.0.0" port="8092" doc:name="HTTPs Listener Configuration" tlsContext-ref="tls.context.listener">
 	</http:listener-config>
 	
-	<http:listener-config name="listener.http" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+	<http:listener-config name="listener.http" host="0.0.0.0" port="8091" doc:name="HTTP Listener Configuration"/>
 	    
 	<http:request-config
 	      name="environment-qax"
@@ -67,11 +67,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 	      port="443"
 	      protocol="HTTPS"
 	      tlsContext-ref="tls.context.requester"
-	      doc:name="HTTP Request Configuration">
-        <tls:context>
-            <tls:trust-store insecure="true"/>
-        </tls:context>
-    </http:request-config>
+	      doc:name="HTTP Request Configuration" />
 	      
 	 <http:request-config
 	      name="environment-stgx"
@@ -91,7 +87,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
       
     <flow name="proxy-qax">
         <http:listener config-ref="listener.http" path="/qax/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
-        <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
+        <custom-processor class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom" />
         <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
         <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
         <http:request config-ref="environment-qax" method="#[message.inboundProperties['http.method']]"
@@ -103,13 +99,13 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         </http:request>
         <flow-ref name="process-response-headers" doc:name="process-response-headers"/>
         <catch-exception-strategy doc:name="Catch Exception Strategy">
-        	<logger level="ERROR" message="Unable to re-send platform call because of exception: #[exception]"  doc:name="Logger"/>
+        	<logger level="DEBUG" message="Platform call not routed"  doc:name="Logger"/>
         </catch-exception-strategy>
     </flow>
     
     <flow name="proxy-stgx">
         <http:listener config-ref="listener.http" path="/stgx/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
-        <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
+        <custom-processor class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
         <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
         <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
         <http:request config-ref="environment-stgx" method="#[message.inboundProperties['http.method']]"
@@ -121,13 +117,13 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         </http:request>
         <flow-ref name="process-response-headers" doc:name="process-response-headers"/>
         <catch-exception-strategy doc:name="Catch Exception Strategy">
-        	<logger level="ERROR" message="Unable to re-send platform call because of exception: #[exception]"  doc:name="Logger"/>
+            <logger level="DEBUG" message="Platform call not routed"  doc:name="Logger"/>	
         </catch-exception-strategy>
     </flow>
     
     <flow name="proxy-prod">
         <http:listener config-ref="listener.http" path="/prod/{runtimeId}/*" parseRequest="false" doc:name="HTTPs"/>
-        <custom-filter class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
+        <custom-processor class="com.mulesoft.platform.interceptor.Interceptor" doc:name="Custom"/>
         <flow-ref name="process-request-headers" doc:name="process-request-headers"/>
         <set-variable value="#[message.inboundProperties['http.listener.path'].replaceAll('\\{runtimeId\\}', message.inboundProperties.'http.uri.params'.runtimeId)]" variableName="resolvedHttpListenerPath" doc:name="Variable" />
         <http:request config-ref="environment-prod" method="#[message.inboundProperties['http.method']]"
@@ -139,7 +135,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         </http:request>
         <flow-ref name="process-response-headers" doc:name="process-response-headers"/>
         <catch-exception-strategy doc:name="Catch Exception Strategy">
-        	<logger level="ERROR" message="Unable to re-send platform call because of exception: #[exception]"  doc:name="Logger"/>
+        	<logger level="DEBUG" message="Platform call not routed"  doc:name="Logger"/>
         </catch-exception-strategy>
     </flow>
 

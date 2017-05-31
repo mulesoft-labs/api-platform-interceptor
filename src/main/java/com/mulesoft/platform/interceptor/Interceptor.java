@@ -22,8 +22,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.log4j.Logger;
+import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
-import org.mule.api.routing.filter.Filter;
+import org.mule.api.processor.MessageProcessor;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -35,7 +36,7 @@ import com.google.gson.JsonParser;
 // TODO: Parameterize environment and listener ports.
 
 @Path("/")
-public class Interceptor implements Filter {
+public class Interceptor implements MessageProcessor {
 	private static final Logger LOG = Logger.getLogger("Message");
 
 	static final String NEW_LINE = System.getProperty("line.separator");
@@ -57,7 +58,8 @@ public class Interceptor implements Filter {
 	}
 
 	@Override
-	public boolean accept(MuleMessage message) {
+	public MuleEvent process(MuleEvent event) {
+		final MuleMessage message = event.getMessage();
 		@SuppressWarnings("unchecked")
 		final String runtimeId = ((Map<String, String>) message.getInboundProperty(HTTP_URI_PARAMETER_KEY)).get(RUNTIME_ID_KEY);
 		final String listenerPath = ((String) (message.getInboundProperty(MULE_LISTENER_PATH_PROP))).replaceAll(URI_TEMPLATE_RUNTIME_ID, runtimeId).replace("/*", "");
@@ -69,7 +71,7 @@ public class Interceptor implements Filter {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug(String.format("%s %s call %sALLOWED for runtime with ID %s (no criteria defined)", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
 			}
-			return true;
+			return event;
 		}
 
 		final FilterResponse filterResponse = statsManager.getFilterResponse(httpRequestPath, httpMethod);
@@ -77,7 +79,7 @@ public class Interceptor implements Filter {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug(String.format("%s %s call %ALLOWED for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
 			}
-			return true;
+			return event;
 		}
 
 		message.setOutboundProperty(HTTP_STATUS_KEY, filterResponse.getStatusCode());
@@ -85,7 +87,7 @@ public class Interceptor implements Filter {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug(String.format("%s %s call %sBLOCKED for runtime with ID %s", httpMethod.toUpperCase(), httpRequestPath, NEW_LINE, runtimeId));
 		}
-		return false;
+		throw new RuntimeException("Message processing stopped");
 	}
 
 	@GET
